@@ -13,8 +13,10 @@ const {
   getAllElements,
   getElement,
   createElement,
-  updateSingle,
   deleteElement,
+  addSingle,
+  updateSingle,
+  deleteSingleData,
 } = require("../controllers/user");
 //projects CRUD
 router.get("/", viewProjects);
@@ -31,7 +33,15 @@ router.delete("/model/:modelId", deleteCreatedModel);
 router.post("/element/getAll/:modelId/", getAllElements);
 router.post("/element/getSingle/:modelId/:elementName", getElement);
 router.post("/element/create/:modelId", createElement);
-router.put("/element/updateSingle/:modelId/:elementName", updateSingle);
-router.post("/element/deleteSingle/:modelId/:elementName", deleteElement);
+router.post("/element/delete/:modelId/:elementName", deleteElement);
+router.post("/element/addSingle/:modelId/:elementName", addSingle);
+router.put(
+  "/element/updateSingle/:modelId/:elementName/:dataName",
+  updateSingle
+);
+router.post(
+  "/element/deleteSingle/:modelId/:elementName/:dataName",
+  deleteSingleData
+);
 
 module.exports = router;

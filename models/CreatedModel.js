@@ -6,33 +6,27 @@ const createdModelSchema = new Schema(
     user: { type: Schema.Types.ObjectId, ref: "User" },
     project: { type: Schema.Types.ObjectId, ref: "Project" },
     createdModelName: String,
-    api: {
-      getAllRoute: String,
-      getSingleRoute: String,
-      createRoute: String,
-      updateSingleRoute: String,
-      deleteSingleRoute: String,
-    },
+    api: {},
     elements: [
       /*
       @ = user input
 
       {
       
-      @name = {
-        
+      @name : {
         elementId: ModelId+@name,
         type: @String,
         required: @false
         default: @"pedrito",
         data: []
         }
+
       }
       
       */
     ],
 
-    // TODO: Here the user will add elements to the schema
+    // TODO: Maybe add Objects and arrays as data (beware of the CRUD though)
   },
   {
     timestamps: {

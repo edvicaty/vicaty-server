@@ -59,10 +59,39 @@ exports.createCreatedModel = async (req, res) => {
     user: req.user._id,
     project: project._id,
     createdModelName,
-    strings: [],
-    numbers: [],
-    booleans: [],
+    elements: [],
   });
+  newModel.api = {
+    getAllElements: {
+      reqType: "POST",
+      route: `/element/getAll/${newModel._id}`,
+    },
+    getElement: {
+      reqType: "POST",
+      route: `/element/getSingle/${newModel._id}/<elementName>`,
+    },
+    createElement: {
+      reqType: "POST",
+      route: `/element/create/${newModel._id}`,
+    },
+    deleteElement: {
+      reqType: "POST",
+      route: `/element/delete/${newModel._id}/<elementName>`,
+    },
+    addSingleData: {
+      reqType: "POST",
+      route: `/element/addSingle/${newModel._id}/<elementName>`,
+    },
+    updateSingleData: {
+      reqType: "POST",
+      route: `/element/updateSingle/${newModel._id}/<elementName>/<dataName>`,
+    },
+    deleteSingleData: {
+      reqType: "POST",
+      route: `/element/deleteSingle/${newModel._id}/<elementName>/<dataName>`,
+    },
+  };
+  newModel.save();
   await project.createdModels.push(newModel._id);
   await project.save();
   res.status(201).json(newModel);
@@ -87,26 +116,231 @@ exports.deleteCreatedModel = async (req, res) => {
 
 //elements inside CreatedModel
 //userId sent through body for validation
+///////////////////////////////// API endpoints controllers ///////////////////////////
+
+//GETALL elements
 exports.getAllElements = async (req, res) => {
-  const { modelId } = req.params;
-  //userId as a token for user validation
-  const { userId } = req.body;
-};
-exports.getElement = async (req, res) => {
-  const { modelId, elementName } = req.params;
-  const { userId } = req.body;
-};
-exports.createElement = async (req, res) => {
   const { modelId } = req.params;
   const { userId } = req.body;
 
   const model = await CreatedModel.findOne({ _id: modelId });
+  if (model.user != userId) {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
+  res.status(200).json(model.elements);
 };
-exports.updateSingle = async (req, res) => {
+//get element
+exports.getElement = async (req, res) => {
   const { modelId, elementName } = req.params;
   const { userId } = req.body;
+  const model = await CreatedModel.findOne({ _id: modelId });
+  if (model.user != userId) {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
+  const query = `${modelId}&&&${elementName}`;
+  const element = model.elements.find((elementQ) => {
+    const el = elementQ[`${elementName}`];
+    if (el) {
+      return el.elementId == query;
+    }
+  });
+
+  res.status(200).json(element);
 };
+//create element
+exports.createElement = async (req, res) => {
+  const { modelId } = req.params;
+  const {
+    userId,
+    elementName,
+    elementType,
+    elementRequired,
+    elementDefault,
+  } = req.body;
+
+  const model = await CreatedModel.findOne({ _id: modelId });
+  if (model.user != userId) {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
+  let repeated = false;
+  await model.elements.forEach((element) => {
+    if (element[`${elementName}`]) {
+      repeated = true;
+    }
+  });
+  if (repeated) {
+    return res.status(409).json({
+      message: `There is an element with that same name, please pick a different name`,
+    });
+  }
+  let element = {};
+  element[elementName] = {
+    elementId: `${modelId}&&&${elementName}`,
+    type: elementType,
+    required: elementRequired,
+    default: elementDefault,
+    data: [],
+  };
+  model.elements.push(element);
+  model.save();
+  res.status(201).json(model);
+};
+
+//delete element
 exports.deleteElement = async (req, res) => {
   const { modelId, elementName } = req.params;
   const { userId } = req.body;
+  const model = await CreatedModel.findOne({
+    _id: modelId,
+  });
+  if (model.user != userId) {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
+  if (!model) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+
+  const index = model.elements.findIndex((element) => {
+    if (element[`${elementName}`]) {
+      return element;
+    }
+  });
+  model.elements.splice(index, 1);
+  model.markModified(`elements`);
+  if (!model.elements) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  model.save();
+  res.status(200).json(model.elements);
+};
+/////// ADD SINGLE /////////////
+exports.addSingle = async (req, res) => {
+  const { modelId, elementName } = req.params;
+  const { userId, value } = req.body;
+  const model = await CreatedModel.findOne({
+    _id: modelId,
+  });
+  if (!model) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  if (model.user != userId) {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
+
+  const index = model.elements.findIndex((element) => {
+    if (element[`${elementName}`]) {
+      return element;
+    }
+  });
+
+  //   if (model.elements[`${index}`][`${elementName}`][`data`].includes(value)) {
+  //     return res.status(409).json({
+  //       message: `There is data with that same name on this element, please pick a different name`,
+  //     });
+  //   }
+
+  // TODO: change update URL endpoint, change to push objects
+  model.elements[`${index}`][`${elementName}`][`data`].push({
+    id: model.elements[`${index}`][`${elementName}`][`data`].length,
+    value: value,
+  });
+  model.markModified(`elements`);
+  if (!model.elements[`${index}`]) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  model.save();
+  res.status(200).json(model.elements[`${index}`]);
+};
+/////// UPDATE SINGLE /////////////
+exports.updateSingle = async (req, res) => {
+  const { modelId, elementName, dataName } = req.params;
+  const { userId, value } = req.body;
+  const model = await CreatedModel.findOne({
+    _id: modelId,
+  });
+  if (!model) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  if (model.user != userId) {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
+
+  const elementIndex = model.elements.findIndex((element) => {
+    if (element[`${elementName}`]) {
+      return element;
+    }
+  });
+  const dataIndex = model.elements[`${elementIndex}`][`${elementName}`][
+    `data`
+  ].findIndex((data) => {
+    return data == dataName;
+  });
+  if (
+    model.elements[`${elementIndex}`][`${elementName}`][`data`].includes(value)
+  ) {
+    return res.status(409).json({
+      message: `There is data with that same name on this element, please pick a different name`,
+    });
+  }
+  model.elements[`${elementIndex}`][`${elementName}`][`data`].splice(
+    dataIndex,
+    1,
+    value
+  );
+  model.markModified(`elements`);
+  if (!model.elements[`${elementIndex}`]) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  model.save();
+  res.status(200).json(model.elements[`${elementIndex}`]);
+};
+
+/////// DELETE SINGLE /////////////
+exports.deleteSingleData = async (req, res) => {
+  const { modelId, elementName, dataName } = req.params;
+  const { userId } = req.body;
+  const model = await CreatedModel.findOne({
+    _id: modelId,
+  });
+  if (!model) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  if (model.user != userId) {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
+
+  const elementIndex = model.elements.findIndex((element) => {
+    if (element[`${elementName}`]) {
+      return element;
+    }
+  });
+  const dataIndex = model.elements[`${elementIndex}`][`${elementName}`][
+    `data`
+  ].findIndex((data) => {
+    return data == dataName;
+  });
+  model.elements[`${elementIndex}`][`${elementName}`][`data`].splice(
+    dataIndex,
+    1
+  );
+  model.markModified(`elements`);
+  if (!model.elements[`${elementIndex}`]) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  model.save();
+  res.status(200).json(model.elements[`${elementIndex}`]);
 };
