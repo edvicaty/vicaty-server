@@ -35,12 +35,9 @@ router.post("/element/getSingle/:modelId/:elementName", getElement);
 router.post("/element/create/:modelId", createElement);
 router.post("/element/delete/:modelId/:elementName", deleteElement);
 router.post("/element/addSingle/:modelId/:elementName", addSingle);
-router.put(
-  "/element/updateSingle/:modelId/:elementName/:dataName",
-  updateSingle
-);
+router.put("/element/updateSingle/:modelId/:elementName/:dataId", updateSingle);
 router.post(
-  "/element/deleteSingle/:modelId/:elementName/:dataName",
+  "/element/deleteSingle/:modelId/:elementName/:dataId",
   deleteSingleData
 );
 

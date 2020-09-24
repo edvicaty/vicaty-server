@@ -1,6 +1,5 @@
 const Project = require("../models/Project");
 const { CreatedModel, createdModelSchema } = require("../models/CreatedModel");
-const { findByIdAndDelete } = require("../models/Project");
 const User = require("../models/User");
 
 //projects
@@ -84,11 +83,11 @@ exports.createCreatedModel = async (req, res) => {
     },
     updateSingleData: {
       reqType: "POST",
-      route: `/element/updateSingle/${newModel._id}/<elementName>/<dataName>`,
+      route: `/element/updateSingle/${newModel._id}/<elementName>/<dataId>`,
     },
     deleteSingleData: {
       reqType: "POST",
-      route: `/element/deleteSingle/${newModel._id}/<elementName>/<dataName>`,
+      route: `/element/deleteSingle/${newModel._id}/<elementName>/<dataId>`,
     },
   };
   newModel.save();
@@ -157,9 +156,7 @@ exports.createElement = async (req, res) => {
   const {
     userId,
     elementName,
-    elementType,
-    elementRequired,
-    elementDefault,
+    //TODO: Possibility to add data types
   } = req.body;
 
   const model = await CreatedModel.findOne({ _id: modelId });
@@ -182,9 +179,6 @@ exports.createElement = async (req, res) => {
   let element = {};
   element[elementName] = {
     elementId: `${modelId}&&&${elementName}`,
-    type: elementType,
-    required: elementRequired,
-    default: elementDefault,
     data: [],
   };
   model.elements.push(element);
@@ -243,13 +237,6 @@ exports.addSingle = async (req, res) => {
     }
   });
 
-  //   if (model.elements[`${index}`][`${elementName}`][`data`].includes(value)) {
-  //     return res.status(409).json({
-  //       message: `There is data with that same name on this element, please pick a different name`,
-  //     });
-  //   }
-
-  // TODO: change update URL endpoint, change to push objects
   model.elements[`${index}`][`${elementName}`][`data`].push({
     id: model.elements[`${index}`][`${elementName}`][`data`].length,
     value: value,
@@ -263,7 +250,7 @@ exports.addSingle = async (req, res) => {
 };
 /////// UPDATE SINGLE /////////////
 exports.updateSingle = async (req, res) => {
-  const { modelId, elementName, dataName } = req.params;
+  const { modelId, elementName, dataId } = req.params;
   const { userId, value } = req.body;
   const model = await CreatedModel.findOne({
     _id: modelId,
@@ -282,23 +269,18 @@ exports.updateSingle = async (req, res) => {
       return element;
     }
   });
+
   const dataIndex = model.elements[`${elementIndex}`][`${elementName}`][
     `data`
   ].findIndex((data) => {
-    return data == dataName;
+    if (data.id == dataId) {
+      return data;
+    }
   });
-  if (
-    model.elements[`${elementIndex}`][`${elementName}`][`data`].includes(value)
-  ) {
-    return res.status(409).json({
-      message: `There is data with that same name on this element, please pick a different name`,
-    });
-  }
-  model.elements[`${elementIndex}`][`${elementName}`][`data`].splice(
-    dataIndex,
-    1,
-    value
-  );
+
+  model.elements[`${elementIndex}`][`${elementName}`][`data`][
+    dataIndex
+  ].value = value;
   model.markModified(`elements`);
   if (!model.elements[`${elementIndex}`]) {
     return res.status(404).json({ message: "Not found, https://http.cat/404" });
@@ -309,7 +291,7 @@ exports.updateSingle = async (req, res) => {
 
 /////// DELETE SINGLE /////////////
 exports.deleteSingleData = async (req, res) => {
-  const { modelId, elementName, dataName } = req.params;
+  const { modelId, elementName, dataId } = req.params;
   const { userId } = req.body;
   const model = await CreatedModel.findOne({
     _id: modelId,
@@ -328,15 +310,16 @@ exports.deleteSingleData = async (req, res) => {
       return element;
     }
   });
+
   const dataIndex = model.elements[`${elementIndex}`][`${elementName}`][
     `data`
   ].findIndex((data) => {
-    return data == dataName;
+    if (data.id == dataId) {
+      return data;
+    }
   });
-  model.elements[`${elementIndex}`][`${elementName}`][`data`].splice(
-    dataIndex,
-    1
-  );
+  model.elements[`${elementIndex}`][`${elementName}`][`data`][dataIndex].value =
+    "";
   model.markModified(`elements`);
   if (!model.elements[`${elementIndex}`]) {
     return res.status(404).json({ message: "Not found, https://http.cat/404" });
