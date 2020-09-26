@@ -4,12 +4,12 @@ const User = require("../models/User");
 
 //projects
 exports.viewProjects = async (req, res) => {
-  const projects = await Project.find().populate("user");
+  const projects = await Project.find({ user: req.user._id });
   res.status(200).json(projects);
 };
 exports.viewProject = async (req, res) => {
   const { projectId } = req.params;
-  const project = await Project.findById(projectId)
+  const project = await Project.find({ _id: projectId, user: req.user._id })
     .populate("user")
     .populate("createdModels");
   res.status(200).json(project);
@@ -40,8 +40,15 @@ exports.editProject = async (req, res) => {
 };
 exports.deleteProject = async (req, res) => {
   const { projectId } = req.params;
-  await Project.findByIdAndDelete(projectId);
-  res.status(200).json({ message: "deleted" });
+  const project = await Project.findById(projectId);
+  if (req.user._id.toString() === project.user.toString()) {
+    await Project.findByIdAndDelete(projectId);
+    return res.status(200).json({ message: "deleted" });
+  } else {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
 };
 
 //models
@@ -109,8 +116,15 @@ exports.editCreatedModel = async (req, res) => {
 };
 exports.deleteCreatedModel = async (req, res) => {
   const { modelId } = req.params;
-  await CreatedModel.findByIdAndDelete(modelId);
-  res.status(200).json({ message: "deleted" });
+  const model = await CreatedModel.findById(modelId);
+  if (req.user._id.toString() === model.user.toString()) {
+    await CreatedModel.findByIdAndDelete(modelId);
+    return res.status(200).json({ message: "deleted" });
+  } else {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
 };
 
 //elements inside CreatedModel
@@ -236,9 +250,15 @@ exports.addSingle = async (req, res) => {
       return element;
     }
   });
+  let lastId = 0;
+  if (model.elements[`${index}`][`${elementName}`][`data`].length >= 1) {
+    let lastIndex =
+      model.elements[`${index}`][`${elementName}`][`data`].length - 1;
+    lastId = model.elements[`${index}`][`${elementName}`][`data`][lastIndex].id;
+  }
 
   model.elements[`${index}`][`${elementName}`][`data`].push({
-    id: model.elements[`${index}`][`${elementName}`][`data`].length,
+    id: lastId + 1,
     value: value,
   });
   model.markModified(`elements`);
@@ -318,8 +338,11 @@ exports.deleteSingleData = async (req, res) => {
       return data;
     }
   });
-  model.elements[`${elementIndex}`][`${elementName}`][`data`][dataIndex].value =
-    "";
+  model.elements[`${elementIndex}`][`${elementName}`][`data`].splice(
+    dataIndex,
+    1
+  );
+
   model.markModified(`elements`);
   if (!model.elements[`${elementIndex}`]) {
     return res.status(404).json({ message: "Not found, https://http.cat/404" });
