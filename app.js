@@ -59,7 +59,7 @@ app.use(
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "hbs");
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public/build")));
 app.use(favicon(path.join(__dirname, "public", "images", "favicon.ico")));
 
 hbs.registerHelper("ifUndefined", (value, options) => {
@@ -92,5 +92,8 @@ app.use("/user", user);
 
 const authRoutes = require("./routes/auth");
 app.use("/auth", authRoutes);
+app.get("/*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/build", "index.html"));
+});
 
 module.exports = app;
