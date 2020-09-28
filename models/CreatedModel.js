@@ -7,6 +7,7 @@ const createdModelSchema = new Schema(
     project: { type: Schema.Types.ObjectId, ref: "Project" },
     createdModelName: String,
     api: {},
+    description: String,
     elements: [
       /*
       @ = user input

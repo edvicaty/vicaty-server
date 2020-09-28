@@ -50,6 +50,104 @@ exports.deleteProject = async (req, res) => {
       .json({ message: "unauthorized, https://http.cat/401" });
   }
 };
+//duplicateProject
+exports.duplicateProject = async (req, res) => {
+  const { projectId } = req.params;
+  const { projectName } = req.body;
+  const originalProject = await Project.findById(projectId).populate(
+    "createdModels"
+  );
+  if (req.user._id.toString() === originalProject.user.toString()) {
+    //creating new project
+    const newProject = await Project.create({
+      user: req.user._id,
+      projectName,
+      createdModels: [],
+    });
+    const user = await User.findOne({ _id: req.user._id });
+    user.projects.push(newProject);
+    user.save();
+    //model multiplication loop
+    for (let i = 0; i < originalProject.createdModels.length; i++) {
+      const user = req.user._id;
+      const project = newProject._id;
+      const createdModelName =
+        originalProject.createdModels[i].createdModelName;
+      const description = originalProject.createdModels[i].description;
+      const elements = originalProject.createdModels[i].elements;
+
+      const newModel = await CreatedModel.create({
+        user,
+        project,
+        createdModelName,
+        elements,
+        description,
+      });
+
+      newModel.api = {
+        viewAllProjects: {
+          reqType: "POST",
+          route: `/project`,
+          body: "userId : <your user Id>",
+        },
+        getProject: {
+          reqType: "POST",
+          route: `/project/${newProject._id}`,
+          body: "userId : <your user Id>",
+        },
+        getCreatedModel: {
+          reqType: "POST",
+          route: `/createdModel/${newModel._id}`,
+          body: "userId : <your user Id>",
+        },
+        getAllElements: {
+          reqType: "POST",
+          route: `/element/getAll/${newModel._id}`,
+          body: "userId : <your user Id>",
+        },
+        getElement: {
+          reqType: "POST",
+          route: `/element/getSingle/${newModel._id}/<elementName>`,
+          body: "userId : <your user Id>",
+        },
+        createElement: {
+          reqType: "POST",
+          route: `/element/create/${newModel._id}`,
+          body:
+            "userId : <your user Id> || elementName: <your new element Name>",
+        },
+        deleteElement: {
+          reqType: "POST",
+          route: `/element/delete/${newModel._id}/<elementName>`,
+          body: "userId : <your user Id>",
+        },
+        addSingleData: {
+          reqType: "POST",
+          route: `/element/addSingle/${newModel._id}/<elementName>`,
+          body: "userId : <your user Id> || value: <your data value>",
+        },
+        updateSingleData: {
+          reqType: "POST",
+          route: `/element/updateSingle/${newModel._id}/<elementName>/<dataId>`,
+          body: "userId : <your user Id> || value: <your new data value>",
+        },
+        deleteSingleData: {
+          reqType: "POST",
+          route: `/element/deleteSingle/${newModel._id}/<elementName>/<dataId>`,
+          body: "userId : <your user Id>",
+        },
+      };
+      newModel.save();
+      await newProject.createdModels.push(newModel._id);
+      await newProject.save();
+    }
+    return res.status(201).json(newProject);
+  } else {
+    return res
+      .status(401)
+      .json({ message: "unauthorized, https://http.cat/401" });
+  }
+};
 
 //models
 exports.viewCreatedModel = async (req, res) => {
@@ -59,42 +157,65 @@ exports.viewCreatedModel = async (req, res) => {
 };
 exports.createCreatedModel = async (req, res) => {
   const { projectId } = req.params;
-  const { createdModelName } = req.body;
+  const { createdModelName, description } = req.body;
   const project = await Project.findOne({ _id: projectId });
   const newModel = await CreatedModel.create({
     user: req.user._id,
     project: project._id,
     createdModelName,
     elements: [],
+    description,
   });
   newModel.api = {
+    viewAllProjects: {
+      reqType: "POST",
+      route: `/project`,
+      body: "userId : <your user Id>",
+    },
+    getProject: {
+      reqType: "POST",
+      route: `/project/${projectId}`,
+      body: "userId : <your user Id>",
+    },
+    getCreatedModel: {
+      reqType: "POST",
+      route: `/createdModel/${newModel._id}`,
+      body: "userId : <your user Id>",
+    },
     getAllElements: {
       reqType: "POST",
       route: `/element/getAll/${newModel._id}`,
+      body: "userId : <your user Id>",
     },
     getElement: {
       reqType: "POST",
       route: `/element/getSingle/${newModel._id}/<elementName>`,
+      body: "userId : <your user Id>",
     },
     createElement: {
       reqType: "POST",
       route: `/element/create/${newModel._id}`,
+      body: "userId : <your user Id> || elementName: <your new element Name>",
     },
     deleteElement: {
       reqType: "POST",
       route: `/element/delete/${newModel._id}/<elementName>`,
+      body: "userId : <your user Id>",
     },
     addSingleData: {
       reqType: "POST",
       route: `/element/addSingle/${newModel._id}/<elementName>`,
+      body: "userId : <your user Id> || value: <your data value>",
     },
     updateSingleData: {
       reqType: "POST",
       route: `/element/updateSingle/${newModel._id}/<elementName>/<dataId>`,
+      body: "userId : <your user Id> || value: <your new data value>",
     },
     deleteSingleData: {
       reqType: "POST",
       route: `/element/deleteSingle/${newModel._id}/<elementName>/<dataId>`,
+      body: "userId : <your user Id>",
     },
   };
   newModel.save();
@@ -104,11 +225,12 @@ exports.createCreatedModel = async (req, res) => {
 };
 exports.editCreatedModel = async (req, res) => {
   const { modelId } = req.params;
-  const { createdModelName } = req.body;
+  const { createdModelName, description } = req.body;
   const updatedModel = await CreatedModel.findByIdAndUpdate(
     modelId,
     {
       createdModelName,
+      description,
     },
     { new: true }
   );
@@ -130,6 +252,46 @@ exports.deleteCreatedModel = async (req, res) => {
 //elements inside CreatedModel
 //userId sent through body for validation
 ///////////////////////////////// API endpoints controllers ///////////////////////////
+
+exports.viewAllProjects = async (req, res) => {
+  const { userId } = req.body;
+
+  const projects = await Project.find({ user: userId }).populate(
+    "createdModels"
+  );
+
+  if (!projects[0]) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  res.status(200).json(projects);
+};
+
+exports.getProject = async (req, res) => {
+  const { projectId } = req.params;
+  const { userId } = req.body;
+
+  const project = await Project.find({ _id: projectId, user: userId }).populate(
+    "createdModels"
+  );
+  if (!project[0]) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  res.status(200).json(project);
+};
+
+exports.getCreatedModel = async (req, res) => {
+  const { modelId } = req.params;
+  const { userId } = req.body;
+
+  const createdModel = await CreatedModel.findOne({
+    _id: modelId,
+    user: userId,
+  });
+  if (!createdModel) {
+    return res.status(404).json({ message: "Not found, https://http.cat/404" });
+  }
+  res.status(200).json(createdModel);
+};
 
 //GETALL elements
 exports.getAllElements = async (req, res) => {
@@ -154,13 +316,14 @@ exports.getElement = async (req, res) => {
       .status(401)
       .json({ message: "unauthorized, https://http.cat/401" });
   }
-  const query = `${modelId}&&&${elementName}`;
-  const element = model.elements.find((elementQ) => {
-    const el = elementQ[`${elementName}`];
-    if (el) {
-      return el.elementId == query;
+
+  const index = model.elements.findIndex((element) => {
+    if (element[`${elementName}`]) {
+      return element;
     }
   });
+
+  const element = model.elements[index];
 
   res.status(200).json(element);
 };
@@ -192,7 +355,6 @@ exports.createElement = async (req, res) => {
   }
   let element = {};
   element[elementName] = {
-    elementId: `${modelId}&&&${elementName}`,
     data: [],
   };
   model.elements.push(element);
@@ -251,6 +413,7 @@ exports.addSingle = async (req, res) => {
     }
   });
   let lastId = 0;
+
   if (model.elements[`${index}`][`${elementName}`][`data`].length >= 1) {
     let lastIndex =
       model.elements[`${index}`][`${elementName}`][`data`].length - 1;
