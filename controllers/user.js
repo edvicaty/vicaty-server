@@ -84,60 +84,6 @@ exports.duplicateProject = async (req, res) => {
         description,
       });
 
-      newModel.api = {
-        viewAllProjects: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/project`,
-          body: "userId : <your user Id>",
-        },
-        getProject: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/project/${newProject._id}`,
-          body: "userId : <your user Id>",
-        },
-        getCreatedModel: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/createdModel/${newModel._id}`,
-          body: "userId : <your user Id>",
-        },
-        getAllElements: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/element/getAll/${newModel._id}`,
-          body: "userId : <your user Id>",
-        },
-        getElement: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/element/getSingle/${newModel._id}/<elementName>`,
-          body: "userId : <your user Id>",
-        },
-        createElement: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/element/create/${newModel._id}`,
-          body:
-            "userId : <your user Id> || elementName: <your new element Name>",
-        },
-        deleteElement: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/element/delete/${newModel._id}/<elementName>`,
-          body: "userId : <your user Id>",
-        },
-        addSingleData: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/element/addSingle/${newModel._id}/<elementName>`,
-          body: "userId : <your user Id> || value: <your data value>",
-        },
-        updateSingleData: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/element/updateSingle/${newModel._id}/<elementName>/<dataId>`,
-          body: "userId : <your user Id> || value: <your new data value>",
-        },
-        deleteSingleData: {
-          reqType: "POST",
-          route: `https://vicaty-api.herokuapp.com/user/element/deleteSingle/${newModel._id}/<elementName>/<dataId>`,
-          body: "userId : <your user Id>",
-        },
-      };
-      newModel.save();
       await newProject.createdModels.push(newModel._id);
       await newProject.save();
     }
@@ -166,59 +112,7 @@ exports.createCreatedModel = async (req, res) => {
     elements: [],
     description,
   });
-  newModel.api = {
-    viewAllProjects: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/project`,
-      body: "userId : <your user Id>",
-    },
-    getProject: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/project/${projectId}`,
-      body: "userId : <your user Id>",
-    },
-    getCreatedModel: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/createdModel/${newModel._id}`,
-      body: "userId : <your user Id>",
-    },
-    getAllElements: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/element/getAll/${newModel._id}`,
-      body: "userId : <your user Id>",
-    },
-    getElement: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/element/getSingle/${newModel._id}/<elementName>`,
-      body: "userId : <your user Id>",
-    },
-    createElement: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/element/create/${newModel._id}`,
-      body: "userId : <your user Id> || elementName: <your new element Name>",
-    },
-    deleteElement: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/element/delete/${newModel._id}/<elementName>`,
-      body: "userId : <your user Id>",
-    },
-    addSingleData: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/element/addSingle/${newModel._id}/<elementName>`,
-      body: "userId : <your user Id> || value: <your data value>",
-    },
-    updateSingleData: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/element/updateSingle/${newModel._id}/<elementName>/<dataId>`,
-      body: "userId : <your user Id> || value: <your new data value>",
-    },
-    deleteSingleData: {
-      reqType: "POST",
-      route: `https://vicaty-api.herokuapp.com/user/element/deleteSingle/${newModel._id}/<elementName>/<dataId>`,
-      body: "userId : <your user Id>",
-    },
-  };
-  newModel.save();
+
   await project.createdModels.push(newModel._id);
   await project.save();
   res.status(201).json(newModel);

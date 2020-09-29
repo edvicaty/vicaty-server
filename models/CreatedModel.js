@@ -6,28 +6,8 @@ const createdModelSchema = new Schema(
     user: { type: Schema.Types.ObjectId, ref: "User" },
     project: { type: Schema.Types.ObjectId, ref: "Project" },
     createdModelName: String,
-    api: {},
     description: String,
-    elements: [
-      /*
-      @ = user input
-
-      {
-      
-      @name : {
-        elementId: ModelId+@name,
-        type: @String,
-        required: @false
-        default: @"pedrito",
-        data: []
-        }
-
-      }
-      
-      */
-    ],
-
-    // TODO: Maybe add Objects and arrays as data (beware of the CRUD though)
+    elements: [],
   },
   {
     timestamps: {
