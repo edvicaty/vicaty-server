@@ -2,7 +2,7 @@ const Project = require("../models/Project");
 const { CreatedModel, createdModelSchema } = require("../models/CreatedModel");
 const User = require("../models/User");
 
-//projects
+//projects CRUD ---------------------------------------------------------------------------
 exports.viewProjects = async (req, res) => {
   const projects = await Project.find({ user: req.user._id });
   res.status(200).json(projects);
@@ -50,7 +50,7 @@ exports.deleteProject = async (req, res) => {
       .json({ message: "unauthorized, https://http.cat/401" });
   }
 };
-//duplicateProject
+//duplicateProject ---------------------------------------------------------------------------
 exports.duplicateProject = async (req, res) => {
   const { projectId } = req.params;
   const { projectName } = req.body;
@@ -58,7 +58,6 @@ exports.duplicateProject = async (req, res) => {
     "createdModels"
   );
   if (req.user._id.toString() === originalProject.user.toString()) {
-    //creating new project
     const newProject = await Project.create({
       user: req.user._id,
       projectName,
@@ -95,7 +94,7 @@ exports.duplicateProject = async (req, res) => {
   }
 };
 
-//models
+//models CRUD  ---------------------------------------------------------------------------
 exports.viewCreatedModel = async (req, res) => {
   const { modelId } = req.params;
   const createdModel = await CreatedModel.findById(modelId);
