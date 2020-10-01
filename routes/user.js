@@ -12,7 +12,7 @@ const {
   editCreatedModel,
   deleteCreatedModel,
 } = require("../controllers/user");
-const { isAuth, checkRole, catchErrors } = require("../middlewares");
+const { isAuth } = require("../middlewares");
 //projects CRUD
 router.get("/", isAuth, viewProjects);
 router.get("/project/:projectId", isAuth, viewProject);
